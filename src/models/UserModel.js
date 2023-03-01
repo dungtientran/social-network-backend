@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema(
     {
-        username: {
+        name: {
             type: String
         },
         email: {
@@ -11,17 +11,29 @@ const UserSchema = new mongoose.Schema(
         password: {
             type: String
         },
-        phone: {
-            type: Number
+        profile: {
+            name: {type: String},
+            email: {type: String},
+            avatar: {type:String},
+            imageBg: {type:String},
+            phone: {type:String},
+            address: {type:String},
+            avatar: {type:String},
+            title: {type: String},
+            listImg: {
+                avatars: {type: Array},
+                imagesPosts: {type: Array},
+                imagesBgs: {type: Array},
+            },
         },
         pendingFriends: {
             type: Array,
         },
-        friends: {
+        requestFriends: {
             type: Array,
         },
-        profile: {
-            type: String,
+        friends: {
+            type: Array,
         },
         verifed: {
             type: Boolean,

@@ -2,6 +2,8 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const dotenv = require('dotenv');
+const cors = require('cors');
+
 dotenv.config();
 const userRouter = require('./src/routes/UserRouter');
 const postRouter = require('./src/routes/PostRouter');
@@ -14,6 +16,7 @@ mongoose.connect(`${process.env.MONGO_DB}`)
     console.log(err)
 })
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded());
 

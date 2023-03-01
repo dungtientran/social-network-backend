@@ -10,7 +10,9 @@ const verifyToken = (req , res , next)=>{
                               next();
                     } )
           }else{
-                    return res.status(400).json("Access token is not valid")
+                    return res.status(400).json({
+                        msg: "Access token is not valid"
+                    })
           }
 }
 
