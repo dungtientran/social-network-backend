@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema(
             type: String
         },
         profile: {
+            id: {type:String},
             name: {type: String},
             email: {type: String},
             avatar: {type:String},

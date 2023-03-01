@@ -109,17 +109,28 @@ router.post('/login', async (req, res) => {
     }
 })
 
-//Get profile
+//Get all user
+router.get("/get-all", verifyToken,async (req, res) => {
+    try {
+        const allUser = await User.find();
+            
+        res.status(200).json(allUser);
+    } catch (error) {
+        return res.status(500).json("Internal server error")
+    }
+})
 
+
+//Get profile
 router.get("/profile/:id",verifyToken, async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(400).json("User not found");
         }
-
+        user.profile.id = user.id
+        await user.save()
         const profile = user.profile
-        
         res.status(200).json(profile);
     } catch (error) {
         return res.status(500).json("Internal server error")
@@ -245,15 +256,13 @@ router.get("/all/user/:id", async (req, res) => {
 //request friend
 router.get("/request-friend/:userId1/:userId2", async (req, res) => {
     try {
-        const fromUserId = req.params.userId1;
+        const fromUser = req.body.user;
         const toUserId = req.params.userId2;
 
-        const fromUser = await User.findById(fromUserId);
         const toUser = await User.findById(toUserId);
 
-        await toUser.updateOne({ $push: { pendingFriends: fromUserId } });
-        await fromUser.updateOne({ $push: { requestFriends: fromUserId } });
-
+        await toUser.updateOne({ $push: { pendingFriends: fromUser } });
+ 
         return res.status(200).json({
             err: 0,
             msg: 'Đã gửi lời mời kết bạn'

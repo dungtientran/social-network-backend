@@ -97,21 +97,22 @@ try {
 
 //Comment 
 router.put("/comment-post" , verifyToken , async(req , res)=>{
-// try {
-      const {comment , postid , profile} = req.body;
+try {
+      const {comment , postid , usercmt} = req.body;
       const comments={
             user:req.user.id,
-            username:req.user.username,
             comment,
-            profile
+            usercmt
       }
+
       const post = await Post.findById(postid);
       post.comments.push(comments);
+      
       await post.save();
       res.status(200).json(post);
-// } catch (error) {
-//       return res.status(500).json("Internal server error")
-// }
+} catch (error) {
+      return res.status(500).json("Internal server error")
+}
 })
 
 //Delete post 

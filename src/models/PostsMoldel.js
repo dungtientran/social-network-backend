@@ -25,18 +25,15 @@ const PostSchema = new mongoose.Schema({
                     {
                               user:{
                                         type:mongoose.Schema.ObjectId,
-                                        required:true
                               },
                               username:{
                                         type:String,
-                                        required:true
                               },
-                              profile:{
-                                        type:String
+                              usercmt:{
+                                        type:Object
                               },
                               comment:{
                                         type:String,
-                                        required:true
                               }
                     }
           ]
