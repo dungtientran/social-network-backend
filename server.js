@@ -36,13 +36,12 @@ const server = app.listen(port, () => {
 
 const io = socket(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: process.env.CLIENT_URL,
         // credentials: true,
     },
 });
 
 let onlineUsers = [];
-
 
 io.on("connection", (socket) => {
     console.log('socken on ' + socket.id);
@@ -60,7 +59,7 @@ io.on("connection", (socket) => {
     })
     socket.on('sendMessenger', (msg) => {
         const recieveUsers = onlineUsers.filter(user => user.userId !== msg.user.id)
-        console.log(recieveUsers);
+        // console.log(recieveUsers);
         recieveUsers.map(recieveUser => {
             io.to(recieveUser.socketId).emit('msg-recieve', msg);
         })
