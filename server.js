@@ -29,6 +29,12 @@ app.use('/api/post', postRouter);
 app.use('/api/messenger', messengerRouter);
 app.use('/api/messengerall', allMessengerRouter);
 
+
+app.get('/', (req, res)=> {
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.send("Api is running...")
+})
+
 const port = process.env.PORT || 3001
 const server = app.listen(port, () => {
     console.log('Server is running in port: ', + port)
