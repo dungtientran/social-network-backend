@@ -3,7 +3,7 @@ const User = require('../models/UserModel');
 
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
-const Post = require('../models/PostsMoldel')
+const Friends = require('../models/FriendsMoldel')
 const { verifyToken } = require("./verifyToken");
 
 //Create
@@ -17,21 +17,13 @@ router.post('/create', async (req, res) => {
             })
         };
 
-        const profile = {
-            name: name,
-            email: email,
-            avatar: 'https://res.cloudinary.com/dbkgkyh4h/image/upload/v1674980785/aztdhoncs6wzqlbb7tqz.jpg',
-            imageBg: 'https://res.cloudinary.com/dbkgkyh4h/image/upload/v1674980641/vii8rn8memosqggzhn6v.jpg',
-            phone: '0123456789',
-            title: 'yêu Dũng',
-        };
         const user = await User.findOne({
             email: email
         });
         if (user) {
             return res.status(200).json({
                 err: 1,
-                msg: 'Email đã được sử dụng'
+                message: 'Email đã được sử dụng'
             })
         };
         const hash = bcrypt.hashSync(password, 10);
@@ -39,16 +31,20 @@ router.post('/create', async (req, res) => {
             name: name,
             email: email,
             password: hash,
-            profile: profile
+            avatar: 'https://res.cloudinary.com/dbkgkyh4h/image/upload/v1674980785/aztdhoncs6wzqlbb7tqz.jpg',
+            imageBg: 'https://res.cloudinary.com/dbkgkyh4h/image/upload/v1674980641/vii8rn8memosqggzhn6v.jpg',
+            phone: '0123456789',
+            title: 'yêu Dũng',
         });
-        const accessToken = jwt.sign({
-            id: createdUser._id,
-            user: createdUser.name
-        }, process.env.ACCESS_TOKEN);
+        await Friends.create({
+            user: createdUser._id
+        })
 
         return res.status(200).json({
             err: 0,
-            msg: 'Đăng ký thành công!',
+            message: 'Đăng ký thành công!',
+            createdUser
+            // createdUser
             // user: {
             //     createdUser,
             //     accessToken
@@ -79,41 +75,39 @@ router.post('/login', async (req, res) => {
                 msg: 'Email chưa được đăng ký'
             })
         };
-        const comparePassword = bcrypt.compareSync(password, user.password);
-        if (!comparePassword) {
-            res.status(200).json({
-                err: 1,
-                message: 'Sai mật khẩu'
-            })
-        };
+        // const comparePassword = bcrypt.compareSync(password, user.password);
+        // if (!comparePassword) {
+        //     res.status(200).json({
+        //         err: 1,
+        //         message: 'Sai mật khẩu'
+        //     })
+        // };
         const accessToken = jwt.sign({
             id: user._id,
             user: user.name
         }, process.env.ACCESS_TOKEN);
-
+       
         return res.status(200).json({
             err: 0,
             msg: 'Đăng nhập thành công!',
-            user: {
-                id: user.id,
-                name: user.name,
-                avatar: user.profile.avatar,
-                token: accessToken
-            }
+            token: accessToken,
+            id: user._id
+            // user,
+            // accessToken
         });
 
     } catch (error) {
         return res.status(400).json({
-            msg: e
+            msg: error
         })
     }
 })
 
 //Get all user
-router.get("/get-all", verifyToken,async (req, res) => {
+router.get("/get-all", verifyToken, async (req, res) => {
     try {
         const allUser = await User.find();
-            
+
         res.status(200).json(allUser);
     } catch (error) {
         return res.status(500).json("Internal server error")
@@ -122,57 +116,42 @@ router.get("/get-all", verifyToken,async (req, res) => {
 
 
 //Get profile
-router.get("/profile/:id",verifyToken, async (req, res) => {
+router.get("/profile/:id", verifyToken, async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(400).json("User not found");
         }
-        user.profile.id = user.id
-        await user.save()
-        const profile = user.profile
+        const profile = {
+            id: user.id,
+            name: user.name,
+            avatar: user.avatar,
+            imageBg: user.imageBg,
+            address: user.address,
+            phone: user.phone,
+            listImage: user.listImg,
+            title: user.title
+        }
+        
         res.status(200).json(profile);
     } catch (error) {
         return res.status(500).json("Internal server error")
     }
 })
 
-//pendingFriends
-router.put("/pending-friends/:id", verifyToken, async (req, res) => {
-    if (req.params.id !== req.body.user) {
-        const user = await User.findById(req.params.id);
-        const otheruser = await User.findById(req.body.user);
-
-        if (!user.Followers.includes(req.body.user)) {
-            await user.updateOne({ $push: { Followers: req.body.user } });
-            await otheruser.updateOne({ $push: { Following: req.params.id } });
-            return res.status(200).json("User has followed");
-        } else {
-            await user.updateOne({ $pull: { Followers: req.body.user } });
-            await otheruser.updateOne({ $pull: { Following: req.params.id } });
-            return res.status(200).json("User has Unfollowed");
+//Get Friends 
+router.get("/get-friends", verifyToken, async (req, res) => {
+    try {
+        const friends = await Friends.find({user:req.user.id});
+        if (!friends) {
+            return res.status(400).json("Sống lỗi nên chưa có bạn !");
         }
-    } else {
-        return res.status(400).json("You can't follow yourself")
+        res.status(200).json(friends);
+    } catch (error) {
+        return res.status(500).json("Internal server error")
     }
 })
 
-//Fetch post from following
-// router.get("/flw/:id" , verifyToken , async(req , res)=>{
-//     try {
-//         const user = await User.findById(req.params.id);
-//         const followersPost = await Promise.all(
-//             user.Following.map((item)=>{
-//                 return Post.find({user:item})
-//             })
-//         )
-//         const userPost = await Post.find({user:user._id});
-
-//         res.status(200).json(userPost.concat(...followersPost));
-//     } catch (error) {
-//         return res.status(500).json("Internal server error")
-//     }
-// })
 
 //Update User Profile
 router.put("/update/:id", verifyToken, async (req, res) => {
@@ -211,6 +190,7 @@ router.delete("/delete/:id", verifyToken, async (req, res) => {
 })
 
 //get user details for post
+
 router.get("/post/user/details/:id", async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -223,74 +203,75 @@ router.get("/post/user/details/:id", async (req, res) => {
         return res.status(500).json("Internal server error")
     }
 })
+//pendingFriends
+// router.put("/pending-friends/", verifyToken, async (req, res) => {
+//     if (req.params.id !== req.body.user) {
+//         const user = await User.findById(req.params.id);
+//         const otheruser = await User.findById(req.body.user);
 
-//get user to follow
-router.get("/all/user/:id", async (req, res) => {
-    try {
-        const allUser = await User.find();
-        const user = await User.findById(req.params.id);
-        const followinguser = await Promise.all(
-            user.Following.map((item) => {
-                return item;
-            })
-        )
-        let UserToFollow = allUser.filter((val) => {
-            return !followinguser.find((item) => {
-                return val._id.toString() === item;
-            })
-        })
+//         if (!user.Followers.includes(req.body.user)) {
+//             await user.updateOne({ $push: { Followers: req.body.user } });
+//             await otheruser.updateOne({ $push: { Following: req.params.id } });
+//             return res.status(200).json("User has followed");
+//         } else {
+//             await user.updateOne({ $pull: { Followers: req.body.user } });
+//             await otheruser.updateOne({ $pull: { Following: req.params.id } });
 
-        let filteruser = await Promise.all(
-            UserToFollow.map((item) => {
-                const { email, phonenumber, Followers, Following, password, ...others } = item._doc;
-                return others
-            })
-        )
-
-        res.status(200).json(filteruser)
-    } catch (error) {
-
-    }
-})
+//             return res.status(200).json("User has Unfollowed");
+//         }
+//     } else {
+//         return res.status(400).json("You can't follow yourself")
+//     }
+// })
 
 //request friend
-router.get("/request-friend/:userId1/:userId2", async (req, res) => {
+router.put("/request-friend", verifyToken, async (req, res) => {
     try {
-        const fromUser = req.body.user;
-        const toUserId = req.params.userId2;
+        const fromUserId = req.user.id
+        const toUserId = req.body.toUser.id;
 
-        const toUser = await User.findById(toUserId);
+        const fromUserInfor = req.body.fromUser;
+        const toUserInfor = req.body.toUser;
 
-        await toUser.updateOne({ $push: { pendingFriends: fromUser } });
- 
+
+        const fromUser = await Friends.find({user:fromUserId});
+        const toUser = await User.find({user:toUserId});
+
+    
+        await fromUser.updateOne({ $push: { requestFriends: toUserInfor} });
+        await toUser.updateOne({ $push: { pendingFriends: fromUserInfor } });
+
+
         return res.status(200).json({
-            err: 0,
             msg: 'Đã gửi lời mời kết bạn'
         })
 
 
     } catch (error) {
-
+        console.log(error);
     }
 })
 
 //add friend
-router.get('/add-friend/:userId1/:userId2', async (req, res) => {
+router.put('/add-friend',verifyToken, async (req, res) => {
     try {
-        const fromUserId = req.params.userId1;
-        const toUserId = req.params.userId2;
+        const fromUserId = req.user.id
+        const toUserId = req.body.toUser.id;
 
-        const fromUser = await User.findById(fromUserId);
-        const toUser = await User.findById(toUserId);
+        const fromUserInfor = req.body.fromUser;
+        const toUserInfor = req.body.toUser;
 
-        await fromUser.updateOne({ $push: { friends: toUserId } });
-        await toUser.updateOne({ $push: { friends: fromUserId } });
+        const fromUser = await Friends.find({user:fromUserId});
+        const toUser = await Friends.find({user:toUserId});
 
-        const idFrom = fromUser.pendingFriends.indexOf(toUserId);
-        fromUser.pendingFriends.splice(idFrom, 1);
+        await toUser.updateOne({ $push: { friends: fromUserInfor } });
+        await fromUser.updateOne({ $push: { friends: toUserInfor} });
 
-        const idTo = toUser.requestFriends.indexOf(fromUserId);
-        toUser.requestFriends.splice(idTo, 1);
+        const indexFrom = fromUser.pendingFriends.findIndex(item => item.id === toUserId)
+        fromUser.pendingFriends.splice(indexFrom, 1);
+
+        const indexTo = fromUser.requestFriends.findIndex(item => item.id === fromUserId)
+        toUser.requestFriends.splice(indexTo, 1);
 
         await fromUser.save();
         await toUser.save();
@@ -301,36 +282,40 @@ router.get('/add-friend/:userId1/:userId2', async (req, res) => {
         })
 
     } catch (error) {
-
+        console.log(error);
     }
 })
 
-//deleteFriend 
+//Cancel request add friend 
 
-router.get('/delete-friend/:userId1/:userId2', async (req, res) => {
+router.put('/delete-friend/:userId1/:userId2', async (req, res) => {
     try {
-        const fromUserId = req.params.userId1;
-        const toUserId = req.params.userId2;
+        const fromUserId = req.user.id
+        const toUserId = req.body.toUser.id;
 
-        const fromUser = await User.findById(fromUserId);
-        const toUser = await User.findById(toUserId);
+        const toUserInfor = req.body.toUser;
 
-        const idFrom = fromUser.friends.indexOf(toUserId);
-        fromUser.friends.splice(idFrom, 1);
 
-        const idTo = toUser.friends.indexOf(fromUserId);
-        toUser.friends.splice(idTo, 1);
+        const fromUser = await Friends.find({user:fromUserId});
+        const toUser = await User.find({user:toUserId});
+
+        const indexFrom = fromUser.pendingFriends.findIndex(item => item.id === toUserId)
+        fromUser.pendingFriends.splice(indexFrom, 1);
+
+        const indexTo = fromUser.requestFriends.findIndex(item => item.id === fromUserId)
+        toUser.requestFriends.splice(indexTo, 1);
+
 
         await fromUser.save();
         await toUser.save();
 
         return res.status(200).json({
             err: 0,
-            msg: 'đã xóa',
+            msg: `đã hủy yêu cầu kết bạn của ${toUserInfor.name}`,
         })
 
     } catch (error) {
-
+        console.log(error);
     }
 })
 

@@ -6,9 +6,9 @@ const { verifyToken } = require("./verifyToken");
 //Create post
 router.post('/create', verifyToken, async (req, res) => {
     try {
-        let { title, image, video } = req.body;
+        let { title, images, videos } = req.body;
         let newpost = new Post({
-            title, image, video, user: req.user.id
+            title, images, videos, user: req.user.id
         })
         const post = await newpost.save();
         res.status(200).json({
@@ -22,7 +22,7 @@ router.post('/create', verifyToken, async (req, res) => {
     }
 }) 
 
-//upload post by one user
+//get post user
 router.get("/get-post/:id" , async(req , res)=>{
     try {
              const mypost = await Post.find({user:req.params.id});

@@ -7,13 +7,12 @@ const PostSchema = new mongoose.Schema({
           },
           title:{
                     type:String,
-                    required:true
           },
-          image:{
-                    type:String,
+          images:{
+                    type:Array, 
           },
-          video:{
-                    type:String,
+          videos:{
+                    type: Array,
           },
           like:{
                     type:Array,
@@ -37,6 +36,10 @@ const PostSchema = new mongoose.Schema({
                               }
                     }
           ]
-})
+},
+{
+    timestamps:true
+}
+)
 
 module.exports = mongoose.model("Post" , PostSchema);
